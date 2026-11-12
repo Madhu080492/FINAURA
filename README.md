@@ -1,3 +1,22 @@
+
+<div align="center">
+
+# 💹 FINAURA
+
+### Multi-Asset Financial Risk Forecasting System
+
+**Understand Market Volatility. Explore Portfolio Risk.**
+
+[![Python](https://img.shields.io/badge/Python-3.14-blue?logo=python)](https://www.python.org/)
+[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)](https://react.dev/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-Backend-009688?logo=fastapi)](https://fastapi.tiangolo.com/)
+[![Machine Learning](https://img.shields.io/badge/Machine%20Learning-Extra%20Trees-orange)](https://scikit-learn.org/)
+
+</div>
+
+---
+
+
 # FINAURA
 ### Multi-Asset Financial Risk Forecasting System
 

@@ -1,0 +1,74 @@
+{
+    "provider": "TejHQ",
+    "exchange": "NSE",
+    "symbols": [
+        "HDFCBANK",
+        "ICICIBANK",
+        "INFY",
+        "ITC",
+        "LT",
+        "RELIANCE",
+        "SBIN",
+        "TCS"
+    ],
+    "total_records": 488,
+    "fetched_at_utc": "2026-11-10T15:08:27.380244+00:00",
+    "stocks": [
+        {
+            "symbol": "HDFCBANK",
+            "latest_date": "2026-11-09",
+            "latest_close": 798.15,
+            "records": 61,
+            "status": "SUCCESS"
+        },
+        {
+            "symbol": "ICICIBANK",
+            "latest_date": "2026-11-09",
+            "latest_close": 1589.0,
+            "records": 61,
+            "status": "SUCCESS"
+        },
+        {
+            "symbol": "INFY",
+            "latest_date": "2026-11-09",
+            "latest_close": 1154.1,
+            "records": 61,
+            "status": "SUCCESS"
+        },
+        {
+            "symbol": "ITC",
+            "latest_date": "2026-11-09",
+            "latest_close": 278.8,
+            "records": 61,
+            "status": "SUCCESS"
+        },
+        {
+            "symbol": "LT",
+            "latest_date": "2026-11-09",
+            "latest_close": 4185.0,
+            "records": 61,
+            "status": "SUCCESS"
+        },
+        {
+            "symbol": "RELIANCE",
+            "latest_date": "2026-11-09",
+            "latest_close": 1324.4,
+            "records": 61,
+            "status": "SUCCESS"
+        },
+        {
+            "symbol": "SBIN",
+            "latest_date": "2026-11-09",
+            "latest_close": 1042.0,
+            "records": 61,
+            "status": "SUCCESS"
+        },
+        {
+            "symbol": "TCS",
+            "latest_date": "2026-11-09",
+            "latest_close": 2475.4,
+            "records": 61,
+            "status": "SUCCESS"
+        }
+    ]
+}

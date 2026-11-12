@@ -1,0 +1,51 @@
+# Node dependencies
+node_modules/
+frontend/node_modules/
+
+# Build files
+frontend/dist/
+dist/
+build/
+
+# Python cache
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Logs and temporary files
+*.log
+*.tmp
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Unrelated academic document
+data/raw/QP-CDSE-II-26-ELEMENTARY-MATHEMATICS-140926.pdf
+
+# Dataset backups
+data/processed/finaura_master_before_*
+data/processed/finaura_master_dataset_backup_*
+
+# Unused duplicate model folder
+notebooks/notebooks/
+
+# Dataset backups
+data/processed/finaura_master_dataset_backup_*.csv
+data/processed/finaura_master_before_*.csv
+
+# Raw data archive (individual files are already included)
+data/raw.zip

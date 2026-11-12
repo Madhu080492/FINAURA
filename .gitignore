@@ -49,3 +49,6 @@ data/processed/finaura_master_before_*.csv
 
 # Raw data archive (individual files are already included)
 data/raw.zip
+
+# User-specific portfolio data
+data/processed/saved_portfolio.json

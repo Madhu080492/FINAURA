@@ -1,4 +1,3 @@
-
 <div align="center">
 
 # 💹 FINAURA
@@ -16,9 +15,6 @@
 
 ---
 
-
-# FINAURA
-### Multi-Asset Financial Risk Forecasting System
 
 FINAURA is an educational financial risk forecasting and portfolio analysis system developed as an integrated AIML project. It combines data processing, machine learning, statistical analysis, and interactive visualization to help users explore market behaviour and understand potential portfolio risks.
 
@@ -194,8 +190,7 @@ FINAURA/
 ├── data/
 │   ├── raw/
 │   └── processed/
-│       ├── finaura_master_dataset.csv
-│       └── saved_portfolio.json
+│       └── finaura_master_dataset.csv
 │
 ├── notebooks/
 │   ├── preprocessing notebooks
@@ -235,7 +230,7 @@ cd FINAURA
 ### Step 2: Install Python Dependencies
 
 ```bash
-py -m pip install fastapi uvicorn pandas numpy joblib scikit-learn==1.7.2
+py -m pip install -r requirements.txt
 ```
 
 ### Step 3: Install Frontend Dependencies
@@ -321,3 +316,28 @@ All forecasts, portfolio metrics, and simulations are illustrative estimates bas
 ## 12. Project Purpose
 
 FINAURA demonstrates the integration of Software Engineering, Data Visualization, Machine Learning, Probability, and Statistics into a single financial risk analysis application.
+
+
+---
+
+## 13. System Architecture
+
+The following diagram illustrates how FINAURA's frontend, backend, datasets, and machine learning model work together.
+
+```mermaid
+flowchart TD
+    A["Financial Market Data"] --> B["Data Collection & Preprocessing"]
+    B --> C[("Master Dataset")]
+    C --> D["FastAPI Backend"]
+
+    E["Extra Trees ML Model"] --> D
+    F["Historical Returns"] --> D
+
+    G["React Frontend"] <-->|"REST API"| D
+
+    D --> H["Market Watch"]
+    D --> I["Risk Analysis"]
+    D --> J["Portfolio Analysis"]
+    D --> K["Overview Dashboard"]
+```
+

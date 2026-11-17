@@ -52,3 +52,11 @@ data/raw.zip
 
 # User-specific portfolio data
 data/processed/saved_portfolio.json
+
+
+# Temporary dataset backups
+data/processed/finaura_master_backup_*.csv
+data/processed/finaura_master_dataset_candidate.csv
+data/processed/nse_stocks_combined.csv
+
+data/raw/*_backup_*.csv

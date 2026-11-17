@@ -1,66 +1,184 @@
+
 import yfinance as yf
 import pandas as pd
 import os
+import shutil
+
+from pathlib import Path
+from datetime import date, timedelta, datetime
 
 # ==========================================
-# FINAURA - FINAL MARKET DATA DOWNLOADER
+# FINAURA - SAFE INCREMENTAL DATA DOWNLOADER
 # ==========================================
 
-# Create folders
-RAW_DIR = "data/raw"
-os.makedirs(RAW_DIR, exist_ok=True)
+RAW_DIR = Path("data/raw")
+RAW_DIR.mkdir(parents=True, exist_ok=True)
 
 START_DATE = "2017-01-01"
-END_DATE = "2026-09-03"
+
+# Yahoo end date is exclusive, so use tomorrow.
+END_DATE = (date.today() + timedelta(days=1)).isoformat()
 
 
 # ==========================================
-# HELPER FUNCTION
+# HELPER: STANDARDIZE DATA
+# ==========================================
+
+def standardize_data(data, ticker=None):
+
+    data = data.reset_index()
+
+    if isinstance(data.columns, pd.MultiIndex):
+        data.columns = [
+            col[0] for col in data.columns
+        ]
+
+    data.columns = [str(c) for c in data.columns]
+
+    if "Datetime" in data.columns and "Date" not in data.columns:
+        data.rename(columns={"Datetime": "Date"}, inplace=True)
+
+    if "date" in data.columns:
+        data.rename(columns={"date": "Date"}, inplace=True)
+
+    if "symbol" in data.columns:
+        data.rename(columns={"symbol": "Symbol"}, inplace=True)
+
+    if "Date" not in data.columns:
+        raise ValueError("Date column missing")
+
+    data["Date"] = pd.to_datetime(
+        data["Date"], errors="coerce", utc=True
+    ).dt.strftime("%Y-%m-%d")
+
+    data = data.dropna(subset=["Date"])
+
+    if ticker:
+        data["Symbol"] = ticker
+
+    return data
+
+
+# ==========================================
+# HELPER: SAFE INCREMENTAL SAVE
+# ==========================================
+
+def save_incremental(new_data, filename, keys):
+
+    filepath = RAW_DIR / filename
+
+    if new_data is None or new_data.empty:
+        print(f"No new data for {filename}. Existing file preserved.")
+        return False
+
+    new_data = new_data.copy()
+
+    if filepath.exists():
+
+        old_data = pd.read_csv(filepath, low_memory=False)
+
+        if "date" in old_data.columns:
+            old_data.rename(
+                columns={"date": "Date"}, inplace=True
+            )
+
+        if "symbol" in old_data.columns:
+            old_data.rename(
+                columns={"symbol": "Symbol"}, inplace=True
+            )
+
+        if "Date" in old_data.columns:
+            old_data["Date"] = pd.to_datetime(
+                old_data["Date"], errors="coerce", utc=True
+            ).dt.strftime("%Y-%m-%d")
+
+        combined = pd.concat(
+            [old_data, new_data],
+            ignore_index=True,
+            sort=False
+        )
+
+    else:
+        combined = new_data
+
+    combined = combined.dropna(subset=keys)
+
+    combined = combined.drop_duplicates(
+        subset=keys,
+        keep="last"
+    )
+
+    combined = combined.sort_values(keys)
+
+    # Timestamped backup before replacing existing file.
+    if filepath.exists():
+
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+        backup = filepath.with_name(
+            filepath.stem + "_backup_" +
+            timestamp + filepath.suffix
+        )
+
+        shutil.copy2(filepath, backup)
+        print("Backup:", backup)
+
+    # Save to temporary file and replace atomically.
+    temp_path = filepath.with_suffix(".tmp")
+
+    combined.to_csv(temp_path, index=False)
+    os.replace(temp_path, filepath)
+
+    print(f"Saved: {filepath}")
+    print("Total rows:", len(combined))
+    print("Latest date:", combined["Date"].max())
+
+    return True
+
+
+# ==========================================
+# HELPER: DOWNLOAD YAHOO DATA
 # ==========================================
 
 def download_yahoo_data(ticker, filename):
-    print(f"\nDownloading {filename}...")
+
+    print(f"\nDownloading {ticker}...")
 
     try:
+
         data = yf.download(
             ticker,
             start=START_DATE,
             end=END_DATE,
             auto_adjust=False,
-            progress=False
+            progress=False,
+            threads=False
         )
 
         if data.empty:
-            print(f"✗ No data received for {ticker}")
+            print("No data received. Existing file preserved.")
             return False
 
-        data = data.reset_index()
+        data = standardize_data(data)
 
-        # Flatten multi-level columns
-        if isinstance(data.columns, pd.MultiIndex):
-            data.columns = [
-                col[0] if col[0] else col[1]
-                for col in data.columns
-            ]
-
-        filepath = os.path.join(RAW_DIR, filename)
-
-        data.to_csv(filepath, index=False)
-
-        print(f"✓ Saved: {filepath}")
-        print(f"  Rows: {len(data)}")
-        print(f"  Columns: {len(data.columns)}")
-
-        return True
+        return save_incremental(
+            data,
+            filename,
+            ["Date"]
+        )
 
     except Exception as e:
-        print(f"✗ Error downloading {ticker}: {e}")
+
+        print(f"Download failed: {e}")
+        print("Existing file preserved.")
         return False
 
 
 # ==========================================
 # 1. NIFTY 50
 # ==========================================
+
+print("\n========== NIFTY 50 ==========")
 
 download_yahoo_data(
     "^NSEI",
@@ -85,9 +203,7 @@ stocks = {
 
 all_stocks = []
 
-print("\n==========================================")
-print("Downloading NSE Stocks")
-print("==========================================")
+print("\n========== NSE STOCKS ==========")
 
 for name, ticker in stocks.items():
 
@@ -100,69 +216,49 @@ for name, ticker in stocks.items():
             start=START_DATE,
             end=END_DATE,
             auto_adjust=False,
-            progress=False
+            progress=False,
+            threads=False
         )
 
         if data.empty:
-            print(f"✗ No data for {name}")
+            print("No data received. Skipping.")
             continue
 
-        data = data.reset_index()
-
-        # Flatten columns
-        if isinstance(data.columns, pd.MultiIndex):
-            data.columns = [
-                col[0] if col[0] else col[1]
-                for col in data.columns
-            ]
-
-        data["Symbol"] = name
+        data = standardize_data(data, name)
 
         all_stocks.append(data)
 
-        print(f"✓ {name} downloaded")
+        print("Downloaded:", len(data), "rows")
 
     except Exception as e:
-        print(f"✗ Error downloading {name}: {e}")
+
+        print(f"Failed {name}: {e}")
 
 
 if all_stocks:
 
     stocks_df = pd.concat(
         all_stocks,
-        ignore_index=True
+        ignore_index=True,
+        sort=False
     )
 
-    columns = [
-        "Date",
-        "Symbol",
-        "Open",
-        "High",
-        "Low",
-        "Close",
-        "Adj Close",
-        "Volume"
-    ]
-
-    stocks_df = stocks_df[
-        [col for col in columns if col in stocks_df.columns]
-    ]
-
-    stocks_df.to_csv(
-        os.path.join(RAW_DIR, "nse_stocks_raw.csv"),
-        index=False
+    save_incremental(
+        stocks_df,
+        "nse_stocks_raw.csv",
+        ["Date", "Symbol"]
     )
-
-    print("\n✓ NSE stocks saved successfully")
 
 else:
 
-    print("\n✗ No stock data downloaded")
+    print("No stock downloads succeeded. Existing file preserved.")
 
 
 # ==========================================
 # 3. GOLD
 # ==========================================
+
+print("\n========== GOLD ==========")
 
 download_yahoo_data(
     "GC=F",
@@ -174,6 +270,8 @@ download_yahoo_data(
 # 4. USD / INR
 # ==========================================
 
+print("\n========== USD / INR ==========")
+
 download_yahoo_data(
     "INR=X",
     "usd_inr_raw.csv"
@@ -184,9 +282,7 @@ download_yahoo_data(
 # 5. INDIA VIX
 # ==========================================
 
-print("\n==========================================")
-print("Downloading India VIX")
-print("==========================================")
+print("\n========== INDIA VIX ==========")
 
 download_yahoo_data(
     "^INDIAVIX",
@@ -195,106 +291,61 @@ download_yahoo_data(
 
 
 # ==========================================
-# 6. CHECK FUEL DATASETS
+# 6. CHECK NON-YAHOO DATASETS
 # ==========================================
 
-print("\n==========================================")
-print("Checking Fuel Datasets")
-print("==========================================")
+print("\n========== OTHER DATASETS ==========")
 
-fuel_files = {
-    "Indian Basket Crude":
-        "indian_basket_crude_raw.csv",
+other_files = [
+    "delhi_petrol_raw.csv",
+    "delhi_diesel_raw.csv",
+    "indian_basket_crude_raw.xlsx"
+]
 
-    "Delhi Petrol":
-        "delhi_petrol_raw.csv",
+for filename in other_files:
 
-    "Delhi Diesel":
-        "delhi_diesel_raw.csv"
-}
+    filepath = RAW_DIR / filename
 
-for dataset_name, filename in fuel_files.items():
+    if not filepath.exists():
+        print(filename, "- MISSING")
+        continue
 
-    filepath = os.path.join(
-        RAW_DIR,
-        filename
-    )
+    try:
 
-    if os.path.exists(filepath):
-
-        try:
+        if filepath.suffix == ".xlsx":
+            df = pd.read_excel(filepath)
+        else:
             df = pd.read_csv(filepath)
 
-            print(
-                f"✓ {dataset_name}: "
-                f"{len(df)} rows, "
-                f"{len(df.columns)} columns"
-            )
-
-        except Exception as e:
-
-            print(
-                f"⚠ {dataset_name} exists "
-                f"but could not be read: {e}"
-            )
-
-    else:
-
         print(
-            f"⚠ {dataset_name}: NOT FOUND"
+            filename,
+            "| Rows:", len(df),
+            "| Columns:", len(df.columns)
         )
+
+    except Exception as e:
+
+        print(filename, "| Read error:", e)
 
 
 # ==========================================
 # FINAL STATUS
 # ==========================================
 
-print("\n==========================================")
-print("FINAURA DATA DOWNLOAD CHECK COMPLETE")
-print("==========================================")
+print("\n===================================")
+print("FINAURA DOWNLOAD PROCESS COMPLETED")
+print("===================================")
 
-print("\nExpected files:")
-
-expected_files = [
-    "nifty50_raw.csv",
-    "nse_stocks_raw.csv",
-    "gold_raw.csv",
-    "usd_inr_raw.csv",
-    "india_vix_raw.csv",
-    "indian_basket_crude_raw.csv",
-    "delhi_petrol_raw.csv",
-    "delhi_diesel_raw.csv"
-]
-
-for i, filename in enumerate(expected_files, 1):
-
-    filepath = os.path.join(
-        RAW_DIR,
-        filename
-    )
-
-    if os.path.exists(filepath):
-        print(f"{i}. ✓ {filename}")
-    else:
-        print(f"{i}. ✗ {filename} - MISSING")
-
-
-print("\n==========================================")
-print("NEXT STEP")
-print("==========================================")
+print("Start date:", START_DATE)
+print("End date (exclusive):", END_DATE)
 
 print("""
-Main ML target:
-Next 5-trading-day realized volatility
+IMPORTANT:
 
-Statistical benchmark:
-GARCH
-
-Additional module:
-Fuel price analysis / forecasting
-
-Important:
-Indian Basket Crude is monthly data.
-Do NOT artificially convert it into daily
-values without documenting a valid method.
+1. Existing historical data is preserved.
+2. Duplicate dates are removed.
+3. Failed downloads do not overwrite existing files.
+4. Fuel datasets require a separate verified source.
+5. Indian Basket Crude remains monthly data.
+6. TejHQ data is kept separate.
 """)
